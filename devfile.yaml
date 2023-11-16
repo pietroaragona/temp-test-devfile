@@ -26,7 +26,7 @@ attributes:
 components:
   - name: tools
     container:
-      image: alm-repos.sogei.it/devfile/universal-developer-image:ubi8-4407fa4_v2.5.1
+      image: alm-repos.sogei.it/devfile/universal-developer-image:ubi8-4407fa4_v2.5.2
       env:
         #- name: MAVEN_OPTS
 #          value: " -Djava.net.useSystemProxies=true "
