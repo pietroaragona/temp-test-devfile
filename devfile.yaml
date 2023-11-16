@@ -9,7 +9,7 @@ attributes:
         cluster-autoscaler.kubernetes.io/safe-to-evict: 'false'
       labels:
         devworkspace: 'true'
-        archetype: quarkus
+        archetype: spring-boot
         servizio_ict: int-sa-0000
 
 
@@ -100,8 +100,8 @@ components:
 
 
   - name: mongo
-    container: 
-      image:  mongo:5
+    container:
+      image: mongo:5
       env:
         - name: MONGO_INITDB_ROOT_USERNAME
           value: "root"
@@ -174,6 +174,18 @@ commands:
           git config --global init.defaultBranch main
         }
         configure_git
+
+  - id: springboot-project
+    exec:
+      label: Create Spring-boot Project using maven archetype
+      component: tools
+      workingDir: ${PROJECTS_ROOT}
+      commandLine: |
+        mvn archetype:generate \
+          -DarchetypeGroupId=it.sogei.architecture.maven.archetypes \
+          -DarchetypeArtifactId=springboot-archetype \
+          -DarchetypeVersion=0.1.0
+
 events:
   postStart:
     - setup-environment
