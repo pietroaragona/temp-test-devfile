@@ -1,0 +1,13 @@
+{
+    "recommendations": [
+        "humao.rest-client",
+        "redhat.fabric8-analytics",
+        "oderwat.indent-rainbow",
+        "redhat.vscode-xml",
+        "redhat.vscode-yaml",
+        "vscjava.vscode-java-pack",
+        "sonarsource.sonarlint-vscode",
+"redhat.vscode-quarkus", "mongodb.mongodb-vscode", ]
+}
+
+

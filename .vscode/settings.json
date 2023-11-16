@@ -1,0 +1,4 @@
+{
+    "java.jdt.ls.java.home": "~/.sdkman/candidates/java/current",
+    "maven.executable.preferMavenWrapper": false
+}
