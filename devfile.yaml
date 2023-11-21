@@ -179,7 +179,7 @@ commands:
     exec:
       label: Create Spring-boot Project using maven archetype
       component: tools
-      workingDir: ${PROJECTS_ROOT}
+      workingDir: ${PROJECT_SOURCE}
       commandLine: |
         mvn archetype:generate \
           -DarchetypeGroupId=it.sogei.architecture.maven.archetypes \
