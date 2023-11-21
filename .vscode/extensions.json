@@ -5,9 +5,7 @@
         "oderwat.indent-rainbow",
         "redhat.vscode-xml",
         "redhat.vscode-yaml",
-        "vscjava.vscode-java-pack",
-        "sonarsource.sonarlint-vscode",
-"vmware.vscode-boot-dev-pack", "mongodb.mongodb-vscode", ]
+"mongodb.mongodb-vscode", ]
 }
 
 

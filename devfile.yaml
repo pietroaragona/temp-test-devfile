@@ -1,190 +1,112 @@
 schemaVersion: 2.2.0
 metadata:
   name: workspace-test
-attributes:
-#  controller.devfile.io/storage-type: ephemeral
-  pod-overrides:
-    metadata:
-      annotations:
-        cluster-autoscaler.kubernetes.io/safe-to-evict: 'false'
-      labels:
-        devworkspace: 'true'
-        archetype: spring-boot
-        servizio_ict: int-sa-0000
-
-
-#projects:
-#  - name: workspaces-devfiles
-#    git:
-#      remotes:
-#        origin: <repo url>
-#      checkoutFrom:
-#        revision: main
-
-
 
 components:
+  - name: wordpress-vol
+    volume:
+      size: 1G
+  - name: mysql-vol
+    volume:
+      size: 1G
+
   - name: tools
     container:
-      image: alm-repos.sogei.it/devfile/universal-developer-image:ubi8-4407fa4_v2.5.2
-      env:
-        #- name: MAVEN_OPTS
-#          value: " -Djava.net.useSystemProxies=true "
-        - name: spring_profiles_active
-          value: devspaces
+      image: alm-repos.sogei.it/devfile/universal-developer-image:ubi8-4407fa4_v2.6.0
+      volumeMounts:
+        - name: wordpress-vol
+          path: /var/www/html
+      memoryLimit: 2G
+      memoryRequest: 256Mi
+      cpuLimit: 700m
+      cpuRequest: 150m      
+      mountSources: true
+
+  - name: mysql
+    container:
+      image: docker.io/mysql:8
       endpoints:
-        - exposure: none
-          name: debug
+        - name: mysql
+          targetPort: 3306
           protocol: tcp
-          targetPort: 5555
+          exposure: internal
+      volumeMounts:
+        - name: mysql-vol
+          path: "/var/lib/mysql"
+      memoryLimit: 2G
+      memoryRequest: 1G
+      cpuLimit: 1000m
+      cpuRequest: 250m
+      mountSources: false
+      env:
+        - name: "MYSQL_USER"
+          value: mysqluser
+        - name: "MYSQL_PASSWORD"
+          value: My0Good0Psw0
+        - name: "MYSQL_DATABASE"
+          value: wordpress
+        - name: "MYSQL_ROOT_PASSWORD"
+          value: My0Good0Psw0
+
+  - name: wordpress
+    container:
+      # required a dedicated image to change the port from 80 to one bigger than 1000 in order to
+      # enable the image to be executed as non root (ports < 1000 require privileged accounts)
+      image: docker.io/cerbio/wordpress:6.3-php8.2-apache_amd
+      endpoints:
         - exposure: public
-          name: app-be
+          name: app
           protocol: http
           targetPort: 8080
-          path: /openapi/ui
+          path: /
       volumeMounts:
-        - name: m2
-          path: /home/user/.m2
-      memoryLimit: 6G
-      memoryRequest: 3G
-      cpuLimit: 1500m
-      cpuRequest: 400m
+        - name: wordpress-vol
+          path: /var/www/html
+      memoryLimit: 2G
+      memoryRequest: 1G
+      cpuLimit: 1000m
+      cpuRequest: 250m      
       mountSources: true
-
-  - name: m2
-    volume:
-      size: 2G
-
-
-  - name: kafka
-    container:
-      image: docker.io/lsnidero/kafka
-      endpoints:
-        - name: kafka-broker
-          targetPort: 9092
-        - name: zookeeper
-          targetPort: 2181
-          exposure: internal
-      volumeMounts:
-        - name: zookeeper-vol
-          path: /var/lib/zookeeper
-      memoryLimit: 768Mi
-      mountSources: true
-
-  - name: zookeeper-vol
-    volume:
-      size: 1G
-      ephemeral: true
-
-  - name: kafka-ui
-    container:
-      image: provectuslabs/kafka-ui:v0.7.1
-      endpoints:
-        - name: kafka-ui
-          targetPort: 8888
-      memoryLimit: 1024Mi
-      cpuLimit: 500m
-      cpuRequest: 10m
       env:
-        - name: KAFKA_CLUSTERS_0_NAMEl
-          value: local
-        - name: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
-          value: localhost:9092
-        - name: KAFKA_CLUSTERS_0_ZOOKEEPER
-          value: localhost:2181
-        - name: KAFKA_CLUSTERS_0_READONLY
-          value: "false"
-        - name: SERVER_PORT
-          value: "8888"
-
-
-
-  - name: mongo
-    container:
-      image: mongo:5
-      env:
-        - name: MONGO_INITDB_ROOT_USERNAME
-          value: "root"
-        - name: MONGO_INITDB_ROOT_PASSWORD
-          value: "mongoRootPassword"
-        - name: MONGO_INITDB_USERNAME
-          value: "mongouser"
-        - name: MONGO_INITDB_PASSWORD
-          value: "mongopassword"
-        - name: MONGO_INITDB_DATABASE
-          value: "mongodb"
-      endpoints:
-        - name: mongo-svc
-          targetPort: 27017
-          exposure: internal
-          protocol: tcp
-      volumeMounts:
-        - name: mongo-vol
-          path: /data/db
-        - name: mongo-config
-          path: /data/config
-      memoryLimit: 768M
-      memoryRequest: 200M
-      cpuLimit: 500m
-      cpuRequest: 10m
-
-
-  - name: mongo-vol
-    volume:
-      ephemeral: true
-      size: 1G
-  - name: mongo-config
-    volume:
-      ephemeral: true
-      size: 50M
-
-
+        - name: WORDPRESS_DB_HOST
+          value: 127.0.0.1
+        - name: WORDPRESS_DB_USER
+          value: mysqluser
+        - name: WORDPRESS_DB_PASSWORD
+          value:  My0Good0Psw0
+        - name: WORDPRESS_DB_NAME
+          value: wordpress
 
 
 commands:
   - id: setup-environment
     exec:
-      label: 0.1 - Initial Environment Setup (Task automatico)
+      label: Task automatico
       component: tools
       workingDir: ${PROJECTS_ROOT}
       commandLine: |
-        # set java version
-        configure_jdk_version(){
-          . /home/user/.sdkman/bin/sdkman-init.sh
-          JAVA_V=17.0.3-tem
-          sdk install java $JAVA_V
-          sdk default java $JAVA_V
-        }
-        configure_jdk_version
-        
-        # configure settings.xml and .npmrc
-        setup_configurations_files(){
-          echo "configuring settings.xml and .npmrc..."
-          MVN_SETTINGS_REMOTE="https://alm-repos.sogei.it/repository/codeready-plugins/assets/settings-https-v3.xml"
-          mkdir -p /home/user/.m2
-          wget  -q --no-check-certificate $MVN_SETTINGS_REMOTE -O /home/user/.m2/settings.xml
-          
-          echo registry=https://alm-repos.sogei.it/repository/npm-group/ > /home/user/.npmrc
-          echo cafile=/etc/pki/ca-trust/source/anchors/alm-repos.sogei.it-ca.crt >> /home/user/.npmrc
-        }
-        setup_configurations_files
-
         configure_git(){
           git config --global credential.helper 'cache --timeout 36000'
           git config --global init.defaultBranch main
         }
         configure_git
 
-  - id: springboot-project
+  - id: deploy-themes
     exec:
-      label: Create Spring-boot Project using maven archetype
+      label: Deploy themes
       component: tools
-      workingDir: ${PROJECT_SOURCE}
+      workingDir: ${PROJECTS_ROOT}
       commandLine: |
-        mvn archetype:generate \
-          -DarchetypeGroupId=it.sogei.architecture.maven.archetypes \
-          -DarchetypeArtifactId=springboot-archetype \
-          -DarchetypeVersion=0.1.0
+        # copy themes nel wp-content
+        cp -R ${PROJECT_SOURCE}/source_repo/themes/* /var/www/html/wp-content/themes
+  - id: deploy-plugins
+    exec:
+      label: Deploy plugins
+      component: tools
+      workingDir: ${PROJECTS_ROOT}
+      commandLine: |
+        # copy themes nel wp-content
+        cp -R ${PROJECT_SOURCE}/source_repo/plugins/* /var/www/html/wp-content/plugins
 
 events:
   postStart:
