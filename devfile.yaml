@@ -1,6 +1,17 @@
 schemaVersion: 2.2.0
 metadata:
   name: workspace-test
+attributes:
+#  controller.devfile.io/storage-type: ephemeral
+  pod-overrides:
+    metadata:
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: 'false'
+      labels:
+        devworkspace: 'true'
+        archetype: wordpress
+        servizio_ict: int-sa-0000
+
 
 components:
   - name: wordpress-vol
@@ -98,7 +109,7 @@ commands:
       workingDir: ${PROJECTS_ROOT}
       commandLine: |
         # copy themes nel wp-content
-        cp -R ${PROJECT_SOURCE}/source_repo/themes/* /var/www/html/wp-content/themes
+        cp -Rv ${PROJECT_SOURCE}/source_repo/themes/* /var/www/html/wp-content/themes
   - id: deploy-plugins
     exec:
       label: Deploy plugins
@@ -106,7 +117,7 @@ commands:
       workingDir: ${PROJECTS_ROOT}
       commandLine: |
         # copy themes nel wp-content
-        cp -R ${PROJECT_SOURCE}/source_repo/plugins/* /var/www/html/wp-content/plugins
+        cp -Rv ${PROJECT_SOURCE}/source_repo/plugins/* /var/www/html/wp-content/plugins
 
 events:
   postStart:
